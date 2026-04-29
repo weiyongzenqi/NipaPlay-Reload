@@ -4,6 +4,7 @@ import 'package:nipaplay/services/webdav_service.dart';
 import 'package:nipaplay/providers/webdav_quick_access_provider.dart';
 import 'package:nipaplay/providers/watch_history_provider.dart';
 import 'package:nipaplay/themes/nipaplay/widgets/blur_snackbar.dart';
+import 'package:nipaplay/themes/nipaplay/widgets/webdav_connection_dialog.dart';
 import 'package:nipaplay/models/watch_history_model.dart';
 import 'package:nipaplay/models/playable_item.dart';
 import 'package:nipaplay/services/playback_service.dart';
@@ -275,6 +276,38 @@ class _WebDAVBrowserPageState extends State<WebDAVBrowserPage> {
     );
   }
 
+  /// 显示添加 WebDAV 服务器对话框
+  Future<void> _showAddServerDialog() async {
+    final connectionsBefore = WebDAVService.instance.connections.length;
+
+    final result = await WebDAVConnectionDialog.show(context);
+
+    if (result == true && mounted) {
+      // 添加成功
+      final connectionsAfter = WebDAVService.instance.connections;
+
+      if (connectionsAfter.isNotEmpty) {
+        // 获取新添加的服务器（最后一个）
+        final newConnection = connectionsAfter.last;
+
+        // 如果添加前没有服务器，添加后只有一个服务器，则自动设置为默认服务器
+        if (connectionsBefore == 0 && connectionsAfter.length == 1) {
+          final provider = Provider.of<WebDAVQuickAccessProvider>(context, listen: false);
+          await provider.setDefaultServerName(newConnection.name);
+          BlurSnackBar.show(context, '已将 ${newConnection.name} 设置为默认 WebDAV 服务器');
+        }
+
+        // 自动选择新添加的服务器并加载目录
+        setState(() {
+          _currentConnection = newConnection;
+          _currentPath = '/';
+          _pathHistory.clear();
+        });
+        await _loadDirectory();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -324,7 +357,7 @@ class _WebDAVBrowserPageState extends State<WebDAVBrowserPage> {
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: () => _showServerSelector(),
+                onPressed: () => _showAddServerDialog(),
                 icon: const Icon(Icons.add),
                 label: const Text('添加服务器'),
                 style: ElevatedButton.styleFrom(
