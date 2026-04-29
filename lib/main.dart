@@ -82,6 +82,8 @@ import 'package:nipaplay/models/watch_history_database.dart';
 import 'package:nipaplay/services/http_client_initializer.dart';
 import 'package:nipaplay/services/smb_proxy_service.dart';
 import 'package:nipaplay/providers/bottom_bar_provider.dart';
+import 'package:nipaplay/providers/webdav_quick_access_provider.dart';
+import 'pages/webdav_browser_page.dart';
 import 'package:nipaplay/models/anime_detail_display_mode.dart';
 import 'package:nipaplay/models/background_image_render_mode.dart';
 import 'package:nipaplay/pages/desktop_pip_window_app.dart';
@@ -652,6 +654,7 @@ void main(List<String> args) async {
       MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => BottomBarProvider()),
+          ChangeNotifierProvider(create: (_) => WebDAVQuickAccessProvider()),
           ChangeNotifierProvider(create: (_) => AppLanguageProvider()),
           ChangeNotifierProvider(create: (_) => SettingsProvider()),
           ChangeNotifierProvider(create: (_) => VideoPlayerState()),
@@ -1066,22 +1069,7 @@ class _NipaPlayAppState extends State<NipaPlayApp> with WidgetsBindingObserver {
 class MainPage extends StatefulWidget {
   final String? launchFilePath;
 
-  // 根据平台动态创建pages列表
-  static List<Widget> createPages() {
-    List<Widget> pages = [
-      const DashboardHomePage(),
-      const PlayVideoPage(),
-      const AnimePage(),
-      const AccountPage(),
-    ];
-    return pages;
-  }
-
-  late final List<Widget> pages;
-
-  MainPage({super.key, this.launchFilePath}) {
-    pages = createPages();
-  }
+  MainPage({super.key, this.launchFilePath});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -1094,6 +1082,17 @@ class MainPageState extends State<MainPage>
   TabController? globalTabController;
   bool _showSplash = true;
   bool _isThemeRevealRunning = false;
+
+  // 动态页面列表
+  static const List<Widget> _basePages = [
+    DashboardHomePage(),
+    PlayVideoPage(),
+    AnimePage(),
+    AccountPage(),
+  ];
+  List<Widget> _pages = [];
+  bool _showWebDAVTab = false;
+  WebDAVQuickAccessProvider? _webdavQuickAccessProvider;
 
   // 用于热键管理
   bool _hotkeysAreRegistered = false;
@@ -1192,25 +1191,95 @@ class MainPageState extends State<MainPage>
   }
 
   Future<void> _initialize() async {
+    // 加载 WebDAV 快捷设置
+    try {
+      _webdavQuickAccessProvider =
+          Provider.of<WebDAVQuickAccessProvider>(context, listen: false);
+      await _webdavQuickAccessProvider!.loadSettings();
+      _showWebDAVTab = _webdavQuickAccessProvider!.showWebDAVTab;
+      _webdavQuickAccessProvider!.addListener(_onWebDAVSettingsChanged);
+    } catch (e) {
+      debugPrint('加载 WebDAV 快捷设置失败: $e');
+    }
+
+    // 构建初始页面列表
+    _rebuildPages();
+
     await _initializeController();
     _initializeListeners();
     _postFrameCallbacks();
   }
 
+  void _onWebDAVSettingsChanged() {
+    final showWebDAVTab = _webdavQuickAccessProvider?.showWebDAVTab ?? false;
+    if (showWebDAVTab != _showWebDAVTab) {
+      _showWebDAVTab = showWebDAVTab;
+      _rebuildPages();
+      _rebuildTabController();
+    }
+  }
+
+  void _rebuildPages() {
+    _pages = List<Widget>.from(_basePages);
+    if (_showWebDAVTab) {
+      // 在播放页面之后插入 WebDAV Tab
+      _pages.insert(2, const WebDAVBrowserPage());
+    }
+  }
+
+  /// 根据设置获取初始 Tab 索引
+  int _getInitialTabIndex() {
+    final defaultTab = _webdavQuickAccessProvider?.effectiveDefaultHomeTab ?? WebDAVQuickAccessProvider.tabHome;
+
+    switch (defaultTab) {
+      case WebDAVQuickAccessProvider.tabHome:
+        return 0;
+      case WebDAVQuickAccessProvider.tabVideo:
+        return 1;
+      case WebDAVQuickAccessProvider.tabWebDAV:
+        return _showWebDAVTab ? 2 : 0; // 如果 WebDAV 未开启，回落到首页
+      case WebDAVQuickAccessProvider.tabMediaLibrary:
+        return _showWebDAVTab ? 3 : 2;
+      case WebDAVQuickAccessProvider.tabAccount:
+        return _showWebDAVTab ? 4 : 3;
+      case WebDAVQuickAccessProvider.tabSettings:
+        // nipaplay 主题没有设置 Tab 在底部导航
+        return _showWebDAVTab ? 3 : 2; // 回落到媒体库
+      default:
+        return 0;
+    }
+  }
+
+  void _rebuildTabController() {
+    final currentIndex = globalTabController?.index ?? 0;
+    globalTabController?.removeListener(_onTabChange);
+    globalTabController?.dispose();
+
+    final tabLength = _pages.length;
+    globalTabController = TabController(
+      length: tabLength,
+      vsync: this,
+      initialIndex: currentIndex.clamp(0, tabLength - 1),
+    );
+    globalTabController?.addListener(_onTabChange);
+
+    setState(() {});
+  }
+
   Future<void> _initializeController() async {
-    final prefs = await SharedPreferences.getInstance();
-    _defaultPageIndex = prefs.getInt('default_page_index') ?? 0;
+    // 使用新的默认主页 Tab 设置
+    final initialIndex = _getInitialTabIndex();
 
     // 强制启用页面滑动动画
     // ... (注释省略)
 
     if (mounted) {
       // 主页面Tab数量与页面列表保持一致
-      final tabLength = widget.pages.length;
+      final tabLength = _pages.length;
       globalTabController = TabController(
         length: tabLength,
         vsync: this,
-        initialIndex: _defaultPageIndex.clamp(0, tabLength - 1),
+        initialIndex: initialIndex.clamp(0, tabLength - 1),
       );
     }
   }
@@ -1327,6 +1396,7 @@ class MainPageState extends State<MainPage>
         ?.removeListener(_onTabChangeRequested); // Temporarily remove
     globalTabController?.removeListener(_onTabChange);
     _videoPlayerState?.removeListener(_manageHotkeys);
+    _webdavQuickAccessProvider?.removeListener(_onWebDAVSettingsChanged);
     globalTabController?.dispose();
     if (globals.isDesktop) {
       windowManager.removeListener(this);
@@ -1509,8 +1579,8 @@ class MainPageState extends State<MainPage>
           selector: (context, videoState) => videoState.shouldShowAppBar(),
           builder: (context, shouldShowAppBar, child) {
             return CustomScaffold(
-              pages: widget.pages,
-              tabPage: createTabLabels(context),
+              pages: _pages,
+              tabPage: createTabLabels(context, showWebDAVTab: _showWebDAVTab),
               pageIsHome: true,
               shouldShowAppBar: shouldShowAppBar,
               tabController: globalTabController,

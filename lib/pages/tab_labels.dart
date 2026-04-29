@@ -1,8 +1,9 @@
 // tab_labels.dart
 import 'package:flutter/material.dart';
 import 'package:nipaplay/l10n/l10n.dart';
+import 'package:kmbal_ionicons/kmbal_ionicons.dart';
 
-List<Widget> createTabLabels(BuildContext context) {
+List<Widget> createTabLabels(BuildContext context, {bool showWebDAVTab = false}) {
   List<Widget> tabs = [
     Padding(
       padding: EdgeInsets.symmetric(horizontal: 8.0),
@@ -12,6 +13,22 @@ List<Widget> createTabLabels(BuildContext context) {
       padding: EdgeInsets.symmetric(horizontal: 8.0),
       child: HoverZoomTab(text: context.l10n.tabVideoPlay),
     ),
+  ];
+
+  // 动态插入 WebDAV Tab
+  if (showWebDAVTab) {
+    tabs.add(
+      Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8.0),
+        child: HoverZoomTab(
+          text: 'WebDAV',
+          icon: const Icon(Ionicons.cloud_outline, size: 18),
+        ),
+      ),
+    );
+  }
+
+  tabs.addAll([
     Padding(
       padding: EdgeInsets.symmetric(horizontal: 8.0),
       child: HoverZoomTab(text: context.l10n.tabMediaLibrary),
@@ -20,7 +37,7 @@ List<Widget> createTabLabels(BuildContext context) {
       padding: EdgeInsets.symmetric(horizontal: 8.0),
       child: HoverZoomTab(text: context.l10n.tabAccount),
     ),
-  ];
+  ]);
 
   return tabs;
 }

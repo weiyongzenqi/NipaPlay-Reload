@@ -18,6 +18,7 @@ import 'package:nipaplay/themes/nipaplay/pages/settings/danmaku_settings_page.da
 import 'package:nipaplay/themes/nipaplay/pages/settings/external_player_settings_page.dart'; // 导入外部调用设置页面
 import 'package:nipaplay/themes/nipaplay/pages/settings/remote_media_library_page.dart'; // 导入远程媒体库设置页面
 import 'package:nipaplay/themes/nipaplay/pages/settings/remote_access_page.dart'; // 导入远程访问设置页面
+import 'package:nipaplay/themes/nipaplay/pages/settings/webdav_quick_settings_page.dart'; // 导入 WebDAV 快捷设置页面
 import 'package:nipaplay/themes/nipaplay/widgets/nipaplay_window.dart';
 import 'package:nipaplay/providers/appearance_settings_provider.dart';
 import 'package:nipaplay/themes/nipaplay/pages/settings/storage_page.dart';
@@ -107,6 +108,7 @@ class _SettingsPageState extends State<SettingsPage>
   static const String _entryExternalPlayer = 'external_player';
   static const String _entryShortcuts = 'shortcuts';
   static const String _entryRemoteMediaLibrary = 'remote_media_library';
+  static const String _entryWebDAVQuick = 'webdav_quick';
   static const String _entryDeveloperOptions = 'developer_options';
   static const String _entryAbout = 'about';
   String? _selectedEntryId;
@@ -345,6 +347,13 @@ class _SettingsPageState extends State<SettingsPage>
         icon: Ionicons.library_outline,
         pageTitle: l10n.remoteMediaLibrary,
         page: const RemoteMediaLibraryPage(),
+      ),
+      const _SettingEntry(
+        id: _entryWebDAVQuick,
+        title: 'WebDAV快捷',
+        icon: Ionicons.cloud_outline,
+        pageTitle: 'WebDAV快捷设置',
+        page: WebDAVQuickSettingsPage(),
       ),
       _SettingEntry(
         id: _entryDeveloperOptions,
