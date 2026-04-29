@@ -63,6 +63,7 @@ class _CupertinoPlayVideoPageState extends State<CupertinoPlayVideoPage> {
   OverlayEntry? _playbackInfoOverlay;
   OverlayEntry? _settingsOverlay;
   final GlobalKey _settingsButtonKey = GlobalKey();
+  bool _isExiting = false; // 标记是否正在退出，用于禁用动画
 
   bool _isRepeatableShortcut(LogicalKeyboardKey key) {
     return key == LogicalKeyboardKey.arrowLeft ||
@@ -1757,7 +1758,12 @@ class _CupertinoPlayVideoPageState extends State<CupertinoPlayVideoPage> {
   Future<bool> _requestExit(VideoPlayerState videoState) async {
     final shouldPop = await videoState.handleBackButton();
     if (shouldPop) {
-      await videoState.resetPlayer();
+      // 标记正在退出，禁用动画以避免闪烁
+      setState(() => _isExiting = true);
+      // Fire-and-forget resetPlayer，不阻塞退出动画
+      unawaited(videoState.resetPlayer().catchError((e) {
+        debugPrint('退出重置失败: $e');
+      }));
     }
     return shouldPop;
   }
