@@ -1,3 +1,5 @@
+个人自用修改版 vibe coding产物  修改质量较低 慎用！ 如官方仓库需要可以任意取本仓库修改代码。
+
 <div align="center">
   <div style="display: flex; align-items: center; justify-content: center;">
     <img src="https://github.com/user-attachments/assets/5366a99f-8906-4198-b2cf-2553252c0fb4" width="100px" style="margin-right: 20px;" alt="Logo">

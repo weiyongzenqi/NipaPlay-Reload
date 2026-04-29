@@ -44,5 +44,5 @@ docs/error.txt
 *.xcscheme
 /.tmp_home
 /packages/nipaplay_smb2/android/.cxx
-/packages/nipaplay_smb2/android/.cxx
-/packages/nipaplay_smb2/android/.cxx/Debug/6r64695b
+**/generated_plugins.cmake
+.claude/settings.local.json
