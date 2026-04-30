@@ -507,6 +507,12 @@ class PlayerConfiguration {
   /// Default: `32` MB or `32 * 1024 * 1024` bytes.
   final int bufferSize;
 
+  /// Whether to allow caching streamed data to disk.
+  /// When `false`, cache is kept in memory only.
+  ///
+  /// Default: `true`.
+  final bool cacheOnDisk;
+
   /// Sets the list of allowed protocols for native backend.
   ///
   /// Default: `['file', 'tcp', 'tls', 'http', 'https', 'crypto', 'data']`.
@@ -528,6 +534,7 @@ class PlayerConfiguration {
     this.libassAndroidFontName,
     this.logLevel = MPVLogLevel.error,
     this.bufferSize = 32 * 1024 * 1024,
+    this.cacheOnDisk = true,
     this.protocolWhitelist = const [
       'udp',
       'rtp',

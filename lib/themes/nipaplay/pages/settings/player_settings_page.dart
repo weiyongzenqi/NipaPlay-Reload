@@ -726,6 +726,11 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
           },
         ),
         Divider(color: colorScheme.onSurface.withOpacity(0.12), height: 1),
+        _MediaKitDiskCacheToggle(
+          colorScheme: colorScheme,
+        ),
+        Divider(color: colorScheme.onSurface.withOpacity(0.12), height: 1),
+        Divider(color: colorScheme.onSurface.withOpacity(0.12), height: 1),
         if (globals.isDesktop) ...[
           Consumer<VideoPlayerState>(
             builder: (context, videoState, child) {
@@ -939,5 +944,40 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
     } else {
       return 'FFmpeg: 软件解码，支持绝大多数格式';
     }
+  }
+}
+
+class _MediaKitDiskCacheToggle extends StatefulWidget {
+  const _MediaKitDiskCacheToggle({required this.colorScheme});
+  final ColorScheme colorScheme;
+
+  @override
+  State<_MediaKitDiskCacheToggle> createState() => _MediaKitDiskCacheToggleState();
+}
+
+class _MediaKitDiskCacheToggleState extends State<_MediaKitDiskCacheToggle> {
+  late bool _cacheOnDisk;
+
+  @override
+  void initState() {
+    super.initState();
+    _cacheOnDisk = PlayerFactory.getMediaKitCacheOnDisk();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      title: const Text('media_kit 磁盘缓存'),
+      subtitle: const Text('关闭后流媒体缓存仅使用内存，不写入磁盘'),
+      secondary: Icon(
+        Ionicons.server_outline,
+        color: widget.colorScheme.onSurface.withOpacity(0.7),
+      ),
+      value: _cacheOnDisk,
+      onChanged: (value) {
+        PlayerFactory.setMediaKitCacheOnDisk(value);
+        setState(() => _cacheOnDisk = value);
+      },
+    );
   }
 }

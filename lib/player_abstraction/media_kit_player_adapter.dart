@@ -225,7 +225,7 @@ class MediaKitPlayerAdapter implements AbstractPlayer, TickerProvider {
   int _platformVideoSurfaceBindingGeneration = 0;
   Media? _pendingPlatformMedia;
 
-  MediaKitPlayerAdapter({int? bufferSize})
+  MediaKitPlayerAdapter({int? bufferSize, bool? cacheOnDisk})
       : _mpvDiagnosticsEnabled = _shouldEnableMpvDiagnostics(),
         _enableHardwareAcceleration = !_shouldDisableHardwareAcceleration(),
         _prefersPlatformVideoSurface = _shouldUseMacOSNativeVideoSurface(),
@@ -240,6 +240,7 @@ class MediaKitPlayerAdapter implements AbstractPlayer, TickerProvider {
                     ? 'Droid Sans Fallback'
                     : null,
             bufferSize: bufferSize ?? _defaultBufferSize,
+            cacheOnDisk: cacheOnDisk ?? true,
             logLevel:
                 _disableMpvLogs ? MPVLogLevel.error : _resolveMpvLogLevel(),
           ),

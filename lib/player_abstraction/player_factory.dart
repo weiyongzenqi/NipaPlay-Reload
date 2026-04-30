@@ -24,12 +24,14 @@ class PlayerFactory {
   static const String _precacheBufferSizeKey = 'player_precache_buffer_size_mb';
   static const String _macOSNativeVideoEnabledKey =
       'macos_native_video_enabled';
+  static const String _mediaKitCacheOnDiskKey = 'media_kit_cache_on_disk';
   static const int defaultPrecacheBufferSizeMb = 32;
   static const int minPrecacheBufferSizeMb = 4;
   static const int maxPrecacheBufferSizeMb = 512;
   static PlayerKernelType? _cachedKernelType;
   static int _cachedPrecacheBufferSizeMb = defaultPrecacheBufferSizeMb;
   static bool _cachedMacOSNativeVideoEnabled = false;
+  static bool _cachedMediaKitCacheOnDisk = true;
   static bool _hasLoadedSettings = false;
 
   // 添加一个StreamController来广播内核切换事件
@@ -53,6 +55,8 @@ class PlayerFactory {
       final bufferSizeMb = prefs.getInt(_precacheBufferSizeKey);
       final macOSNativeVideoEnabled =
           prefs.getBool(_macOSNativeVideoEnabledKey) ?? false;
+      _cachedMediaKitCacheOnDisk =
+          prefs.getBool(_mediaKitCacheOnDiskKey) ?? true;
 
       if (kernelTypeIndex != null &&
           kernelTypeIndex < PlayerKernelType.values.length) {
@@ -149,6 +153,18 @@ class PlayerFactory {
     return _cachedMacOSNativeVideoEnabled;
   }
 
+  static bool getMediaKitCacheOnDisk() => _cachedMediaKitCacheOnDisk;
+
+  static Future<void> setMediaKitCacheOnDisk(bool value) async {
+    _cachedMediaKitCacheOnDisk = value;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_mediaKitCacheOnDiskKey, value);
+    } catch (e) {
+      debugPrint('[PlayerFactory] 保存 disk cache 设置失败: $e');
+    }
+  }
+
   static int getPrecacheBufferSizeBytes() {
     return getPrecacheBufferSizeMb() * 1024 * 1024;
   }
@@ -201,6 +217,7 @@ class PlayerFactory {
       case PlayerKernelType.mediaKit:
         return MediaKitPlayerAdapter(
           bufferSize: getPrecacheBufferSizeBytes(),
+          cacheOnDisk: getMediaKitCacheOnDisk(),
         );
       // case PlayerKernelType.otherPlayer:
       //   // return OtherPlayerAdapter(ThirdPartyPlayerApi());
@@ -210,6 +227,7 @@ class PlayerFactory {
         debugPrint('[PlayerFactory] 未知播放器内核类型，默认使用 MediaKit');
         return MediaKitPlayerAdapter(
           bufferSize: getPrecacheBufferSizeBytes(),
+          cacheOnDisk: getMediaKitCacheOnDisk(),
         );
     }
   }
